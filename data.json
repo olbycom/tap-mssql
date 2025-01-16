@@ -1,0 +1,6 @@
+{
+  "name": "tap-mssql",
+  "variant": "wintersrd",
+  "pip_url": "tap-mssql",
+  "capabilities": ["state", "catalog", "discover"]
+}
