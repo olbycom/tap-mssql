@@ -135,9 +135,7 @@ class BinlogInterruption(unittest.TestCase):
 
         self.assertTrue(failed_syncing_table_2)
 
-        record_messages_1 = [
-            [m.stream, m.record] for m in SINGER_MESSAGES if isinstance(m, singer.RecordMessage)
-        ]
+        record_messages_1 = [[m.stream, m.record] for m in SINGER_MESSAGES if isinstance(m, singer.RecordMessage)]
 
         self.assertEqual(
             record_messages_1,
@@ -177,9 +175,7 @@ class BinlogInterruption(unittest.TestCase):
 
         self.assertFalse(failed_syncing_table_2)
 
-        record_messages_2 = [
-            [m.stream, m.record] for m in SINGER_MESSAGES if isinstance(m, singer.RecordMessage)
-        ]
+        record_messages_2 = [[m.stream, m.record] for m in SINGER_MESSAGES if isinstance(m, singer.RecordMessage)]
 
         self.assertEqual(
             record_messages_2,
@@ -222,9 +218,7 @@ class BinlogInterruption(unittest.TestCase):
 
         self.assertFalse(failed_syncing_table_2)
 
-        record_messages_3 = [
-            [m.stream, m.record] for m in SINGER_MESSAGES if isinstance(m, singer.RecordMessage)
-        ]
+        record_messages_3 = [[m.stream, m.record] for m in SINGER_MESSAGES if isinstance(m, singer.RecordMessage)]
 
         self.assertEqual(
             record_messages_3,
@@ -292,9 +286,7 @@ class FullTableInterruption(unittest.TestCase):
 
         self.assertTrue(failed_syncing_table_2)
 
-        record_messages_1 = [
-            [m.stream, m.record] for m in SINGER_MESSAGES if isinstance(m, singer.RecordMessage)
-        ]
+        record_messages_1 = [[m.stream, m.record] for m in SINGER_MESSAGES if isinstance(m, singer.RecordMessage)]
 
         self.assertEqual(
             record_messages_1,
@@ -327,9 +319,7 @@ class FullTableInterruption(unittest.TestCase):
 
         self.assertFalse(failed_syncing_table_2)
 
-        record_messages_2 = [
-            [m.stream, m.record] for m in SINGER_MESSAGES if isinstance(m, singer.RecordMessage)
-        ]
+        record_messages_2 = [[m.stream, m.record] for m in SINGER_MESSAGES if isinstance(m, singer.RecordMessage)]
         self.assertEqual(
             record_messages_2,
             [

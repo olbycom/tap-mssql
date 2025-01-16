@@ -16,7 +16,7 @@ import tap_mssql.sync_strategies.common as common
 import tap_mssql.sync_strategies.full_table as full_table
 import tap_mssql.sync_strategies.incremental as incremental
 import tap_mssql.sync_strategies.log_based as log_based
-from tap_mssql.connection import MSSQLConnection, connect_with_backoff, ResultIterator
+from tap_mssql.connection import MSSQLConnection, ResultIterator, connect_with_backoff
 
 ARRAYSIZE = 1
 

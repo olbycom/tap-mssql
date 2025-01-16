@@ -78,9 +78,7 @@ class TestTypeMapping(unittest.TestCase):
         cls.metadata = catalog.streams[0].metadata
 
     def get_metadata_for_column(self, colName):
-        return next(md for md in self.metadata if md["breadcrumb"] == ("properties", colName))[
-            "metadata"
-        ]
+        return next(md for md in self.metadata if md["breadcrumb"] == ("properties", colName))["metadata"]
 
     def test_decimal(self):
         self.assertEqual(
@@ -167,9 +165,7 @@ class TestTypeMapping(unittest.TestCase):
     def test_int(self):
         self.assertEqual(
             self.schema.properties["c_int"],
-            Schema(
-                ["null", "integer"], inclusion="available", minimum=-2147483648, maximum=2147483647
-            ),
+            Schema(["null", "integer"], inclusion="available", minimum=-2147483648, maximum=2147483647),
         )
         self.assertEqual(
             self.get_metadata_for_column("c_int"),
@@ -223,9 +219,7 @@ class TestTypeMapping(unittest.TestCase):
     #     )
 
     def test_bit(self):
-        self.assertEqual(
-            self.schema.properties["c_bit"], Schema(["null", "boolean"], inclusion="available")
-        )
+        self.assertEqual(self.schema.properties["c_bit"], Schema(["null", "boolean"], inclusion="available"))
         self.assertEqual(
             self.get_metadata_for_column("c_bit"),
             {"selected-by-default": True, "sql-datatype": "bit"},
@@ -280,8 +274,11 @@ class TestSelectsAppropriateColumns(unittest.TestCase):
         got_cols = tap_mssql.desired_columns(selected_cols, table_schema)
 
         self.assertEqual(
-            got_cols, ["a", "a1", "a2", "c"], "Keep automatic as well as selected, available columns. Ordered correctly."
+            got_cols,
+            ["a", "a1", "a2", "c"],
+            "Keep automatic as well as selected, available columns. Ordered correctly.",
         )
+
 
 class TestInvalidInclusion(unittest.TestCase):
     def runTest(self):
@@ -295,6 +292,7 @@ class TestInvalidInclusion(unittest.TestCase):
         )
 
         self.assertRaises(Exception, tap_mssql.desired_columns, selected_cols, table_schema)
+
 
 class TestSchemaMessages(unittest.TestCase):
     def runTest(self):
@@ -325,9 +323,7 @@ class TestSchemaMessages(unittest.TestCase):
         config = test_utils.get_db_config()
         tap_mssql.do_sync(conn, config, catalog, {})
 
-        schema_message = list(
-            filter(lambda m: isinstance(m, singer.SchemaMessage), SINGER_MESSAGES)
-        )[0]
+        schema_message = list(filter(lambda m: isinstance(m, singer.SchemaMessage), SINGER_MESSAGES))[0]
         self.assertTrue(isinstance(schema_message, singer.SchemaMessage))
         # tap-mssql selects new fields by default. If a field doesn't appear in the schema, then it should be
         # selected
@@ -338,11 +334,7 @@ class TestSchemaMessages(unittest.TestCase):
 
 def currently_syncing_seq(messages):
     return "".join(
-        [
-            (m.value.get("currently_syncing", "_") or "_")[-1]
-            for m in messages
-            if isinstance(m, singer.StateMessage)
-        ]
+        [(m.value.get("currently_syncing", "_") or "_")[-1] for m in messages if isinstance(m, singer.StateMessage)]
     )
 
 
@@ -453,9 +445,7 @@ class TestStreamVersionFullTable(unittest.TestCase):
 
         (message_types, versions) = message_types_and_versions(SINGER_MESSAGES)
 
-        self.assertEqual(
-            ["ActivateVersionMessage", "RecordMessage"], sorted(list(set(message_types)))
-        )
+        self.assertEqual(["ActivateVersionMessage", "RecordMessage"], sorted(list(set(message_types))))
         self.assertTrue(isinstance(versions[0], int))
         self.assertEqual(versions[0], versions[1])
 
@@ -493,9 +483,7 @@ class TestStreamVersionFullTable(unittest.TestCase):
     def test_version_cleared_from_state_after_full_table_success(self):
         common.get_stream_version = lambda a, b: 12345
 
-        state = {
-            "bookmarks": {"dbo-full_table": {"version": 1, "initial_full_table_complete": True}}
-        }
+        state = {"bookmarks": {"dbo-full_table": {"version": 1, "initial_full_table_complete": True}}}
 
         global SINGER_MESSAGES
         SINGER_MESSAGES.clear()
@@ -561,15 +549,14 @@ class TestIncrementalReplication(unittest.TestCase):
 
         (message_types, versions) = message_types_and_versions(SINGER_MESSAGES)
 
-
         self.assertTrue(isinstance(versions[0], int))
         self.assertEqual(versions[0], versions[1])
-        record_messages = [message for message in SINGER_MESSAGES if isinstance(message,singer.RecordMessage)]
-        incremental_record_messages = [m for m in record_messages if m.stream == 'dbo-incremental']
-        integer_incremental_record_messages = [m for m in record_messages if m.stream == 'dbo-integer_incremental']
-        
-        self.assertEqual(len(incremental_record_messages),3)
-        self.assertEqual(len(integer_incremental_record_messages),3)
+        record_messages = [message for message in SINGER_MESSAGES if isinstance(message, singer.RecordMessage)]
+        incremental_record_messages = [m for m in record_messages if m.stream == "dbo-incremental"]
+        integer_incremental_record_messages = [m for m in record_messages if m.stream == "dbo-integer_incremental"]
+
+        self.assertEqual(len(incremental_record_messages), 3)
+        self.assertEqual(len(integer_incremental_record_messages), 3)
 
     def test_with_state(self):
         state = {
@@ -602,14 +589,14 @@ class TestIncrementalReplication(unittest.TestCase):
         )
         self.assertTrue(isinstance(versions[0], int))
         self.assertEqual(versions[0], versions[1])
-        
+
         # Based on state values provided check the number of record messages emitted
-        record_messages = [message for message in SINGER_MESSAGES if isinstance(message,singer.RecordMessage)]
-        incremental_record_messages = [m for m in record_messages if m.stream == 'dbo-incremental']
-        integer_incremental_record_messages = [m for m in record_messages if m.stream == 'dbo-integer_incremental']
-        
-        self.assertEqual(len(incremental_record_messages),2)
-        self.assertEqual(len(integer_incremental_record_messages),1)
+        record_messages = [message for message in SINGER_MESSAGES if isinstance(message, singer.RecordMessage)]
+        incremental_record_messages = [m for m in record_messages if m.stream == "dbo-incremental"]
+        integer_incremental_record_messages = [m for m in record_messages if m.stream == "dbo-integer_incremental"]
+
+        self.assertEqual(len(incremental_record_messages), 2)
+        self.assertEqual(len(integer_incremental_record_messages), 1)
 
 
 class TestViews(unittest.TestCase):
@@ -651,11 +638,10 @@ class TestViews(unittest.TestCase):
         catalog = test_utils.discover_catalog(self.conn, {})
         primary_keys = {}
         for c in catalog.streams:
-            primary_keys[c.table] = (
-                singer.metadata.to_map(c.metadata).get((), {}).get("table-key-properties")
-            )
+            primary_keys[c.table] = singer.metadata.to_map(c.metadata).get((), {}).get("table-key-properties")
 
         self.assertEqual(primary_keys, {"a_table": ["id"], "a_view": []})
+
 
 class TestTimestampIncrementalReplication(unittest.TestCase):
     def setUp(self):
@@ -668,9 +654,9 @@ class TestTimestampIncrementalReplication(unittest.TestCase):
                 except:
                     pass
                 cursor.execute("CREATE TABLE incremental (val int, updated timestamp)")
-                cursor.execute("INSERT INTO incremental (val) VALUES (1)") #00000000000007d1
-                cursor.execute("INSERT INTO incremental (val) VALUES (2)") #00000000000007d2
-                cursor.execute("INSERT INTO incremental (val) VALUES (3)") #00000000000007d3
+                cursor.execute("INSERT INTO incremental (val) VALUES (1)")  # 00000000000007d1
+                cursor.execute("INSERT INTO incremental (val) VALUES (2)")  # 00000000000007d2
+                cursor.execute("INSERT INTO incremental (val) VALUES (3)")  # 00000000000007d3
 
         self.catalog = test_utils.discover_catalog(self.conn, {})
 
@@ -700,17 +686,16 @@ class TestTimestampIncrementalReplication(unittest.TestCase):
 
         (message_types, versions) = message_types_and_versions(SINGER_MESSAGES)
 
-        record_messages = [message for message in SINGER_MESSAGES if isinstance(message,singer.RecordMessage)]
-        
-        self.assertEqual(len(record_messages),3)
+        record_messages = [message for message in SINGER_MESSAGES if isinstance(message, singer.RecordMessage)]
 
+        self.assertEqual(len(record_messages), 3)
 
     def test_with_state(self):
         state = {
             "bookmarks": {
                 "dbo-incremental": {
                     "version": 1,
-                    "replication_key_value": '00000000000007d2',
+                    "replication_key_value": "00000000000007d2",
                     "replication_key": "updated",
                 },
             }
@@ -723,9 +708,10 @@ class TestTimestampIncrementalReplication(unittest.TestCase):
         (message_types, versions) = message_types_and_versions(SINGER_MESSAGES)
 
         # Given the state value supplied, there should only be two RECORD messages
-        record_messages = [message for message in SINGER_MESSAGES if isinstance(message,singer.RecordMessage)]
-        
-        self.assertEqual(len(record_messages),2)
+        record_messages = [message for message in SINGER_MESSAGES if isinstance(message, singer.RecordMessage)]
+
+        self.assertEqual(len(record_messages), 2)
+
 
 class TestPrimaryKeyUniqueKey(unittest.TestCase):
     def setUp(self):
@@ -777,11 +763,9 @@ class TestPrimaryKeyUniqueKey(unittest.TestCase):
         catalog = test_utils.discover_catalog(self.conn, {})
         primary_keys = {}
         for c in catalog.streams:
-            primary_keys[c.table] = (
-                singer.metadata.to_map(c.metadata).get((), {}).get("table-key-properties")
-            )
+            primary_keys[c.table] = singer.metadata.to_map(c.metadata).get((), {}).get("table-key-properties")
 
-        self.assertEqual(primary_keys["uc_only_table"], ["uc_1","uc_2"])
+        self.assertEqual(primary_keys["uc_only_table"], ["uc_1", "uc_2"])
         self.assertEqual(primary_keys["pk_only_table"], ["pk"])
         self.assertEqual(primary_keys["pk_uc_table"], ["pk"])
 

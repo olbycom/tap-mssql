@@ -25,22 +25,16 @@ def generate_bookmark_keys(catalog_entry):
 
 def sync_table(mssql_conn, config, catalog_entry, state, columns, stream_version):
     mssql_conn = MSSQLConnection(config)
-    common.whitelist_bookmark_keys(
-        generate_bookmark_keys(catalog_entry), catalog_entry.tap_stream_id, state
-    )
+    common.whitelist_bookmark_keys(generate_bookmark_keys(catalog_entry), catalog_entry.tap_stream_id, state)
 
     bookmark = state.get("bookmarks", {}).get(catalog_entry.tap_stream_id, {})
     version_exists = True if "version" in bookmark else False
 
-    initial_full_table_complete = singer.get_bookmark(
-        state, catalog_entry.tap_stream_id, "initial_full_table_complete"
-    )
+    initial_full_table_complete = singer.get_bookmark(state, catalog_entry.tap_stream_id, "initial_full_table_complete")
 
     state_version = singer.get_bookmark(state, catalog_entry.tap_stream_id, "version")
 
-    activate_version_message = singer.ActivateVersionMessage(
-        stream=catalog_entry.stream, version=stream_version
-    )
+    activate_version_message = singer.ActivateVersionMessage(stream=catalog_entry.stream, version=stream_version)
 
     # For the initial replication, emit an ACTIVATE_VERSION message
     # at the beginning so the records show up right away.
@@ -53,9 +47,7 @@ def sync_table(mssql_conn, config, catalog_entry, state, columns, stream_version
 
             params = {}
 
-            common.sync_query(
-                cur, catalog_entry, state, select_sql, columns, stream_version, params, config
-            )
+            common.sync_query(cur, catalog_entry, state, select_sql, columns, stream_version, params, config)
 
     # clear max pk value and last pk fetched upon successful sync
     singer.clear_bookmark(state, catalog_entry.tap_stream_id, "max_pk_values")

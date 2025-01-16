@@ -19,9 +19,7 @@ LOGGER = singer.get_logger()
 
 def escape(string):
     if "`" in string:
-        raise Exception(
-            "Can't escape identifier {} because it contains a double quote".format(string)
-        )
+        raise Exception("Can't escape identifier {} because it contains a double quote".format(string))
     return '"' + string + '"'
 
 
@@ -78,8 +76,8 @@ def get_key_properties(catalog_entry):
         key_properties = stream_metadata.get("table-key-properties", [])
 
     return key_properties
-  
-  
+
+
 def prepare_columns_sql(catalog_entry, c):
     """
     Places double quotes around the columns to be selected and does any required
@@ -106,25 +104,23 @@ def prepare_columns_sql(catalog_entry, c):
     """
 
     if "`" in c:
-        raise Exception(
-            "Can't escape identifier {} because it contains a double quote".format(c)
-        )
+        raise Exception("Can't escape identifier {} because it contains a double quote".format(c))
     column_name = """ "{}" """.format(c)
     schema_property = catalog_entry.schema.properties[c]
     sql_data_type = ""
     # additionalProperties is used with singer.decimal to contain scale/precision
     # in those cases, there will not be an sql_data_type value in the schema
     if schema_property.additionalProperties:
-        sql_data_type = schema_property.additionalProperties.get('sql_data_type',"")
+        sql_data_type = schema_property.additionalProperties.get("sql_data_type", "")
 
     # Format the field as a sring in SQL Server to avoid rounding by the PYMSSQL driver
-    if 'string' in schema_property.type and schema_property.format == 'date-time':
-        if sql_data_type == 'datetime2':
+    if "string" in schema_property.type and schema_property.format == "date-time":
+        if sql_data_type == "datetime2":
             return f"""case when {column_name} is not null then
                       CONVERT(VARCHAR,{column_name},121)
                     else null end
                     """
-        elif sql_data_type == 'datetimeoffset':
+        elif sql_data_type == "datetimeoffset":
             return f"""case when {column_name} is not null then
                       CONVERT(VARCHAR,{column_name},127)
                     else null end
@@ -197,7 +193,7 @@ def row_to_singer_record(catalog_entry, version, row, columns, time_extracted, c
             row_to_persist += (boolean_representation,)
         elif isinstance(elem, uuid.UUID):
             row_to_persist += (str(elem),)
-        elif property_format == 'singer.decimal':
+        elif property_format == "singer.decimal":
             if elem is None:
                 row_to_persist += (elem,)
             else:
@@ -206,9 +202,7 @@ def row_to_singer_record(catalog_entry, version, row, columns, time_extracted, c
             row_to_persist += (elem,)
     rec = dict(zip(columns, row_to_persist))
 
-    return singer.RecordMessage(
-        stream=catalog_entry.stream, record=rec, version=version, time_extracted=time_extracted
-    )
+    return singer.RecordMessage(stream=catalog_entry.stream, record=rec, version=version, time_extracted=time_extracted)
 
 
 def whitelist_bookmark_keys(bookmark_key_set, tap_stream_id, state):
@@ -237,13 +231,11 @@ def sync_query(cursor, catalog_entry, state, select_sql, columns, stream_version
     with metrics.record_counter(None) as counter:
         counter.tags["database"] = database_name
         counter.tags["table"] = catalog_entry.table
-        
+
         for row in ResultIterator(cursor, ARRAYSIZE):
             counter.increment()
             rows_saved += 1
-            record_message = row_to_singer_record(
-                catalog_entry, stream_version, row, columns, time_extracted, config
-            )
+            record_message = row_to_singer_record(catalog_entry, stream_version, row, columns, time_extracted, config)
             singer.write_message(record_message)
             md_map = metadata.to_map(catalog_entry.metadata)
             stream_metadata = md_map.get((), {})
@@ -252,14 +244,10 @@ def sync_query(cursor, catalog_entry, state, select_sql, columns, stream_version
             if replication_method == "FULL_TABLE":
                 key_properties = get_key_properties(catalog_entry)
 
-                max_pk_values = singer.get_bookmark(
-                    state, catalog_entry.tap_stream_id, "max_pk_values"
-                )
+                max_pk_values = singer.get_bookmark(state, catalog_entry.tap_stream_id, "max_pk_values")
 
                 if max_pk_values:
-                    last_pk_fetched = {
-                        k: v for k, v in record_message.record.items() if k in key_properties
-                    }
+                    last_pk_fetched = {k: v for k, v in record_message.record.items() if k in key_properties}
 
                     state = singer.write_bookmark(
                         state, catalog_entry.tap_stream_id, "last_pk_fetched", last_pk_fetched
@@ -268,14 +256,10 @@ def sync_query(cursor, catalog_entry, state, select_sql, columns, stream_version
             elif replication_method == "LOG_BASED":
                 key_properties = get_key_properties(catalog_entry)
 
-                max_lsn_values = singer.get_bookmark(
-                    state, catalog_entry.tap_stream_id, "max_lsn_values"
-                )
+                max_lsn_values = singer.get_bookmark(state, catalog_entry.tap_stream_id, "max_lsn_values")
 
                 if max_lsn_values:
-                    last_lsn_fetched = {
-                        k: v for k, v in record_message.record.items() if k in key_properties
-                    }
+                    last_lsn_fetched = {k: v for k, v in record_message.record.items() if k in key_properties}
 
                     state = singer.write_bookmark(
                         state, catalog_entry.tap_stream_id, "last_lsn_fetched", last_lsn_fetched

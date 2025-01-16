@@ -24,7 +24,7 @@ def verify_change_data_capture_table(connection, schema_name, table_name):
                    join sys.schemas s on (s.schema_id = t.schema_id)
                    and  t.name = '{}'
                    and  s.name = '{}'""".format(
-            table_name.replace('"',''), schema_name.replace('"','')
+            table_name.replace('"', ""), schema_name.replace('"', "")
         )
     )
     row = cur.fetchone()
@@ -90,9 +90,7 @@ def get_lsn_available_range(connection, capture_instance_name):
     if row[0] is None:  # Test that the lsn_from is not NULL i.e. there is change data to process
         LOGGER.info("No data available to process in CDC table %s", capture_instance_name)
     else:
-        LOGGER.info(
-            "Data available in cdc table %s from lsn %s", capture_instance_name, row[0].hex()
-        )
+        LOGGER.info("Data available in cdc table %s from lsn %s", capture_instance_name, row[0].hex())
 
     return row
 
@@ -135,8 +133,7 @@ def add_synthetic_keys_to_schema(catalog_entry):
     )
     catalog_entry.schema.properties["_sdc_lsn_operation"] = Schema(
         description=(
-            "The operation that took place (1=Delete, 2=Insert, 3=Update (Before Image),"
-            "4=Update (After Image) )"
+            "The operation that took place (1=Delete, 2=Insert, 3=Update (Before Image)," "4=Update (After Image) )"
         ),
         type=["null", "integer"],
         format="integer",
@@ -165,9 +162,7 @@ def generate_bookmark_keys(catalog_entry):
 
 def sync_historic_table(mssql_conn, config, catalog_entry, state, columns, stream_version):
     mssql_conn = MSSQLConnection(config)
-    common.whitelist_bookmark_keys(
-        generate_bookmark_keys(catalog_entry), catalog_entry.tap_stream_id, state
-    )
+    common.whitelist_bookmark_keys(generate_bookmark_keys(catalog_entry), catalog_entry.tap_stream_id, state)
 
     # Add additional keys to the columns
     extended_columns = columns + [
@@ -182,15 +177,11 @@ def sync_historic_table(mssql_conn, config, catalog_entry, state, columns, strea
     bookmark = state.get("bookmarks", {}).get(catalog_entry.tap_stream_id, {})
     version_exists = True if "version" in bookmark else False
 
-    initial_full_table_complete = singer.get_bookmark(
-        state, catalog_entry.tap_stream_id, "initial_full_table_complete"
-    )
+    initial_full_table_complete = singer.get_bookmark(state, catalog_entry.tap_stream_id, "initial_full_table_complete")
 
     state_version = singer.get_bookmark(state, catalog_entry.tap_stream_id, "version")
 
-    activate_version_message = singer.ActivateVersionMessage(
-        stream=catalog_entry.stream, version=stream_version
-    )
+    activate_version_message = singer.ActivateVersionMessage(stream=catalog_entry.stream, version=stream_version)
 
     # For the initial replication, emit an ACTIVATE_VERSION message
     # at the beginning so the records show up right away.
@@ -257,9 +248,7 @@ def sync_historic_table(mssql_conn, config, catalog_entry, state, columns, strea
 
 def sync_table(mssql_conn, config, catalog_entry, state, columns, stream_version):
     mssql_conn = MSSQLConnection(config)
-    common.whitelist_bookmark_keys(
-        generate_bookmark_keys(catalog_entry), catalog_entry.tap_stream_id, state
-    )
+    common.whitelist_bookmark_keys(generate_bookmark_keys(catalog_entry), catalog_entry.tap_stream_id, state)
 
     # Add additional keys to the columns
     extended_columns = columns + [
@@ -274,15 +263,11 @@ def sync_table(mssql_conn, config, catalog_entry, state, columns, stream_version
     bookmark = state.get("bookmarks", {}).get(catalog_entry.tap_stream_id, {})
     version_exists = True if "version" in bookmark else False
 
-    initial_full_table_complete = singer.get_bookmark(
-        state, catalog_entry.tap_stream_id, "initial_full_table_complete"
-    )
+    initial_full_table_complete = singer.get_bookmark(state, catalog_entry.tap_stream_id, "initial_full_table_complete")
 
     state_version = singer.get_bookmark(state, catalog_entry.tap_stream_id, "version")
 
-    activate_version_message = singer.ActivateVersionMessage(
-        stream=catalog_entry.stream, version=stream_version
-    )
+    activate_version_message = singer.ActivateVersionMessage(stream=catalog_entry.stream, version=stream_version)
 
     # For the initial replication, emit an ACTIVATE_VERSION message
     # at the beginning so the records show up right away.
@@ -336,11 +321,7 @@ def sync_table(mssql_conn, config, catalog_entry, state, columns, stream_version
                         )
                         from_lsn_expression = "{}".format(py_bin_to_mssql(state_last_lsn))
                     else:
-                        from_lsn_expression = (
-                            (
-                                "sys.fn_cdc_increment_lsn({})"
-                            ).format(py_bin_to_mssql(state_last_lsn))
-                        )
+                        from_lsn_expression = ("sys.fn_cdc_increment_lsn({})").format(py_bin_to_mssql(state_last_lsn))
                 else:
                     raise Exception(
                         (
