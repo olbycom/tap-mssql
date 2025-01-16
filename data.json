@@ -1,6 +1,7 @@
 {
   "name": "tap-mssql",
   "variant": "wintersrd",
-  "pip_url": "tap-mssql",
+  "pip_url": "-e ./extract/tap-mssql",
+  "executable": "tap-mssql",
   "capabilities": ["state", "catalog", "discover"]
 }
