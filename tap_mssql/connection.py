@@ -5,8 +5,10 @@ from os import environ
 import backoff
 import pymssql
 import singer
+from custom_logger import user_logger
 
-LOGGER = singer.get_logger()
+# LOGGER = singer.get_logger()
+LOGGER = user_logger
 
 
 @backoff.on_exception(backoff.expo, pymssql.Error, max_tries=5, factor=2)
@@ -14,7 +16,7 @@ def connect_with_backoff(connection):
     warnings = []
     with connection.cursor():
         if warnings:
-            LOGGER.info(("Encountered non-fatal errors when configuring session that could " "impact performance:"))
+            LOGGER.info("Encountered non-fatal errors when configuring session that could impact performance:")
         for w in warnings:
             LOGGER.warning(w)
 

@@ -4,12 +4,14 @@
 import copy
 
 import singer
+from custom_logger import user_logger
 from singer.schema import Schema
 
 import tap_mssql.sync_strategies.common as common
 from tap_mssql.connection import MSSQLConnection, connect_with_backoff
 
-LOGGER = singer.get_logger()
+# LOGGER = singer.get_logger()
+LOGGER = user_logger
 
 
 def py_bin_to_mssql(binary_value):
@@ -133,7 +135,7 @@ def add_synthetic_keys_to_schema(catalog_entry):
     )
     catalog_entry.schema.properties["_sdc_lsn_operation"] = Schema(
         description=(
-            "The operation that took place (1=Delete, 2=Insert, 3=Update (Before Image)," "4=Update (After Image) )"
+            "The operation that took place (1=Delete, 2=Insert, 3=Update (Before Image), 4=Update (After Image) )"
         ),
         type=["null", "integer"],
         format="integer",

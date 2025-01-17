@@ -5,9 +5,15 @@ import copy
 import itertools
 import logging
 
+import custom_logger
+
+_ = custom_logger
+
+
 import singer
 import singer.metrics as metrics
 import singer.schema
+from custom_logger import user_logger
 from singer import metadata, utils
 from singer.catalog import Catalog, CatalogEntry
 from singer.schema import Schema
@@ -36,9 +42,10 @@ Column = collections.namedtuple(
 
 REQUIRED_CONFIG_KEYS = ["host", "database"]
 
-LOGGER = singer.get_logger()
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+# LOGGER = singer.get_logger()
+# logger = logging.getLogger(__name__)
+# logger.setLevel(logging.INFO)
+LOGGER = user_logger
 
 STRING_TYPES = set(
     [
@@ -79,6 +86,7 @@ VARIANT_TYPES = set(["json"])
 def default_date_format():
     return False
 
+
 def default_singer_decimal():
     """
     singer_decimal can be enabled in the the config, which will use singer.decimal as a format and string as the type
@@ -86,14 +94,15 @@ def default_singer_decimal():
     """
     return False
 
+
 def schema_for_column(c, config):
     """Returns the Schema object for the given Column."""
     data_type = c.data_type.lower()
 
     inclusion = "available"
 
-    use_date_data_type_format = config.get('use_date_datatype') or default_date_format()
-    use_singer_decimal = config.get('use_singer_decimal') or default_singer_decimal()
+    use_date_data_type_format = config.get("use_date_datatype") or default_date_format()
+    use_singer_decimal = config.get("use_singer_decimal") or default_singer_decimal()
 
     if c.is_primary_key == 1:
         inclusion = "automatic"
@@ -102,7 +111,7 @@ def schema_for_column(c, config):
 
     if data_type == "bit":
         result.type = ["null", "boolean"]
-    
+
     elif data_type in ["timestamp", "rowversion"]:
         result.type = ["null", "string"]
         result.format = "rowversion"
@@ -110,7 +119,7 @@ def schema_for_column(c, config):
     elif data_type in BYTES_FOR_INTEGER_TYPE:
         result.type = ["null", "integer"]
         bits = BYTES_FOR_INTEGER_TYPE[data_type] * 8
-        if data_type == 'tinyint':
+        if data_type == "tinyint":
             result.minimum = 0
             result.maximum = 255
         else:
@@ -119,7 +128,7 @@ def schema_for_column(c, config):
 
     elif data_type in FLOAT_TYPES:
         if use_singer_decimal:
-            result.type = ["null","string"]
+            result.type = ["null", "string"]
             result.format = "singer.decimal"
         else:
             result.type = ["null", "number"]
@@ -127,9 +136,11 @@ def schema_for_column(c, config):
 
     elif data_type in DECIMAL_TYPES:
         if use_singer_decimal:
-            result.type = ["null","number","string"]
+            result.type = ["null", "number", "string"]
             result.format = "singer.decimal"
-            result.additionalProperties = {"scale_precision": f"({c.character_maximum_length or c.numeric_precision},{c.numeric_scale})"}
+            result.additionalProperties = {
+                "scale_precision": f"({c.character_maximum_length or c.numeric_precision},{c.numeric_scale})"
+            }
         else:
             result.type = ["null", "number"]
             result.multipleOf = 10 ** (0 - c.numeric_scale)
@@ -187,9 +198,7 @@ def create_column_metadata(cols, config):
             "selected-by-default",
             schema.inclusion != "unsupported",
         )
-        mdata = metadata.write(
-            mdata, ("properties", c.column_name), "sql-datatype", c.data_type.lower()
-        )
+        mdata = metadata.write(mdata, ("properties", c.column_name), "sql-datatype", c.data_type.lower())
 
     return metadata.to_list(mdata)
 
@@ -228,7 +237,7 @@ def discover_catalog(mssql_conn, config):
         )
         table_info = {}
 
-        for (db, table, table_type) in cur.fetchall():
+        for db, table, table_type in cur.fetchall():
             if db not in table_info:
                 table_info[db] = {}
 
@@ -289,7 +298,7 @@ def discover_catalog(mssql_conn, config):
 
         LOGGER.info("Columns Fetched")
         entries = []
-        for (k, cols) in itertools.groupby(columns, lambda c: (c.table_schema, c.table_name)):
+        for k, cols in itertools.groupby(columns, lambda c: (c.table_schema, c.table_name)):
             cols = list(cols)
             (table_schema, table_name) = k
             schema = Schema(
@@ -332,37 +341,30 @@ def do_discover(mssql_conn, config):
     discover_catalog(mssql_conn, config).dump()
 
 
-def desired_columns(selected : list, table_schema):
+def desired_columns(selected: list, table_schema):
     """Return the set of column names we need to include in the SELECT.
 
     selected - set of column names marked as selected in the input catalog
     table_schema - the most recently discovered Schema for the table
     """
     all_columns = [column for column in table_schema.properties.keys()]
-    
+
     available = [
-        column for column, column_schema 
-        in table_schema.properties.items() 
-        if column_schema.inclusion == 'available'
+        column for column, column_schema in table_schema.properties.items() if column_schema.inclusion == "available"
     ]
-    
+
     automatic = [
-        column for column, column_schema
-        in table_schema.properties.items() 
-        if column_schema.inclusion == 'automatic'
+        column for column, column_schema in table_schema.properties.items() if column_schema.inclusion == "automatic"
     ]
-    
+
     unsupported = [
-        column for column, column_schema
-        in table_schema.properties.items()
-        if column_schema.inclusion == 'unsupported'
+        column for column, column_schema in table_schema.properties.items() if column_schema.inclusion == "unsupported"
     ]
-    
+
     unknown = [
-        (column,column_schema.inclusion)
-        for column, column_schema 
-        in table_schema.properties.items() 
-        if column_schema.inclusion not in ['available', 'automatic', 'unsupported']
+        (column, column_schema.inclusion)
+        for column, column_schema in table_schema.properties.items()
+        if column_schema.inclusion not in ["available", "automatic", "unsupported"]
     ]
 
     if unknown:
@@ -501,24 +503,14 @@ def get_non_cdc_streams(mssql_conn, catalog, config, state):
 
         if not stream_state:
             if replication_method == "LOG_BASED":
-                LOGGER.info(
-                    "LOG_BASED stream %s requires full historical sync", stream.tap_stream_id
-                )
+                LOGGER.info("LOG_BASED stream %s requires full historical sync", stream.tap_stream_id)
 
             streams_without_state.append(stream)
-        elif (
-            stream_state
-            and replication_method == "LOG_BASED"
-            and cdc_stream_requires_historical(stream, state)
-        ):
+        elif stream_state and replication_method == "LOG_BASED" and cdc_stream_requires_historical(stream, state):
             is_view = common.get_is_view(stream)
 
             if is_view:
-                raise Exception(
-                    "Unable to replicate stream({}) with cdc because it is a view.".format(
-                        stream.stream
-                    )
-                )
+                raise Exception("Unable to replicate stream({}) with cdc because it is a view.".format(stream.stream))
 
             LOGGER.info("LOG_BASED stream %s will resume its historical sync", stream.tap_stream_id)
 
@@ -537,15 +529,12 @@ def get_non_cdc_streams(mssql_conn, catalog, config, state):
     if currently_syncing:
         currently_syncing_stream = list(
             filter(
-                lambda s: s.tap_stream_id == currently_syncing
-                and is_valid_currently_syncing_stream(s, state),
+                lambda s: s.tap_stream_id == currently_syncing and is_valid_currently_syncing_stream(s, state),
                 ordered_streams,
             )
         )
 
-        non_currently_syncing_streams = list(
-            filter(lambda s: s.tap_stream_id != currently_syncing, ordered_streams)
-        )
+        non_currently_syncing_streams = list(filter(lambda s: s.tap_stream_id != currently_syncing, ordered_streams))
 
         streams_to_sync = currently_syncing_stream + non_currently_syncing_streams
     else:
@@ -611,9 +600,7 @@ def do_sync_historical_log(mssql_conn, config, catalog_entry, state, columns):
     # Prefer initial_full_table_complete going forward
     singer.clear_bookmark(state, catalog_entry.tap_stream_id, "version")
 
-    state = singer.write_bookmark(
-        state, catalog_entry.tap_stream_id, "initial_full_table_complete", True
-    )
+    state = singer.write_bookmark(state, catalog_entry.tap_stream_id, "initial_full_table_complete", True)
 
     singer.write_message(singer.StateMessage(value=copy.deepcopy(state)))
 
@@ -630,9 +617,7 @@ def do_sync_full_table(mssql_conn, config, catalog_entry, state, columns):
     # Prefer initial_full_table_complete going forward
     singer.clear_bookmark(state, catalog_entry.tap_stream_id, "version")
 
-    state = singer.write_bookmark(
-        state, catalog_entry.tap_stream_id, "initial_full_table_complete", True
-    )
+    state = singer.write_bookmark(state, catalog_entry.tap_stream_id, "initial_full_table_complete", True)
 
     singer.write_message(singer.StateMessage(value=copy.deepcopy(state)))
 
@@ -660,9 +645,7 @@ def sync_non_cdc_streams(mssql_conn, non_cdc_catalog, config, state):
         columns = list(catalog_entry.schema.properties.keys())
 
         if not columns:
-            LOGGER.warning(
-                "There are no columns selected for stream %s, skipping it.", catalog_entry.stream
-            )
+            LOGGER.warning("There are no columns selected for stream %s, skipping it.", catalog_entry.stream)
             continue
 
         state = singer.set_currently_syncing(state, catalog_entry.tap_stream_id)
@@ -678,14 +661,10 @@ def sync_non_cdc_streams(mssql_conn, non_cdc_catalog, config, state):
         LOGGER.info(f"Table {catalog_entry.table} proposes {replication_method} sync")
         if not replication_method and config.get("default_replication_method"):
             replication_method = config.get("default_replication_method")
-            LOGGER.info(
-                f"Table {catalog_entry.table} reverting to DEFAULT {replication_method} sync"
-            )
+            LOGGER.info(f"Table {catalog_entry.table} reverting to DEFAULT {replication_method} sync")
 
         if replication_method == "INCREMENTAL" and not replication_key:
-            LOGGER.info(
-                f"No replication key for {catalog_entry.table}, using full table replication"
-            )
+            LOGGER.info(f"No replication key for {catalog_entry.table}, using full table replication")
             replication_method = "FULL_TABLE"
         # Check for INCREMENTAL load without primary keys removed
         # INCREMENTAL loads can be performed without primary keys as long as there is a replication key
@@ -710,9 +689,7 @@ def sync_non_cdc_streams(mssql_conn, non_cdc_catalog, config, state):
                 LOGGER.info(f"syncing {catalog_entry.table} cdc tables")
                 do_sync_historical_log(mssql_conn, config, catalog_entry, state, columns)
             else:
-                raise Exception(
-                    "only INCREMENTAL, LOG_BASED and FULL_TABLE replication methods are supported"
-                )
+                raise Exception("only INCREMENTAL, LOG_BASED and FULL_TABLE replication methods are supported")
 
     state = singer.set_currently_syncing(state, None)
     singer.write_message(singer.StateMessage(value=copy.deepcopy(state)))
@@ -799,7 +776,7 @@ def main_impl():
     mssql_conn = MSSQLConnection(args.config)
     log_server_params(mssql_conn)
 
-    ARRAYSIZE = args.config.get('cursor_array_size',1)
+    ARRAYSIZE = args.config.get("cursor_array_size", 1)
     common.ARRAYSIZE = ARRAYSIZE
 
     if args.discover:

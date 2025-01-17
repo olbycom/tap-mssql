@@ -8,13 +8,15 @@ import uuid
 
 import singer
 import singer.metrics as metrics
+from custom_logger import internal_logger
 from singer import metadata, utils
 
 from tap_mssql.connection import ResultIterator
 
 ARRAYSIZE = 1
 
-LOGGER = singer.get_logger()
+# LOGGER = singer.get_logger()
+LOGGER = internal_logger
 
 
 def escape(string):

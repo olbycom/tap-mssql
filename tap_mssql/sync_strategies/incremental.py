@@ -5,12 +5,14 @@ from datetime import datetime
 
 import pendulum
 import singer
+from custom_logger import internal_logger
 from singer import metadata
 
 import tap_mssql.sync_strategies.common as common
 from tap_mssql.connection import MSSQLConnection, connect_with_backoff
 
-LOGGER = singer.get_logger()
+# LOGGER = singer.get_logger()
+LOGGER = internal_logger
 
 BOOKMARK_KEYS = {"replication_key", "replication_key_value", "version"}
 
